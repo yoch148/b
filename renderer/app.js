@@ -1,5 +1,5 @@
 'use strict';
-const api = window.api || {
+const store = window.api || {
   load: async () => JSON.parse(localStorage.getItem('db') || 'null'),
   save: async d => localStorage.setItem('db', JSON.stringify(d)),
   backup: async d => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(d)])); a.download = 'backup.json'; a.click(); return true; },
@@ -18,7 +18,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const uid = () => Math.random().toString(36).slice(2, 10);
 const mins = t => { const [h, m] = (t || '0:0').split(':'); return +h * 60 + +m; };
 const money = v => `${v.toFixed(2)} ${db.biz.cur}`;
-const save = () => api.save(db);
+const save = () => store.save(db);
 const emp = id => db.emps.find(e => e.id === (id || S.eid));
 const setPath = (o, p, v) => { const k = p.split('.'); const l = k.pop(); k.forEach(x => o = o[x]); o[l] = v; };
 
@@ -274,7 +274,7 @@ const A = {
     save(); render();
   },
   delshift(id) { db.shifts = db.shifts.filter(s => s.id !== id); save(); render(); },
-  async xlsx() { const r = report(); await api.xlsx(r.rows, r.title.replace(/[\\/:*?"<>|]/g, '-')); },
+  async xlsx() { const r = report(); await store.xlsx(r.rows, r.title.replace(/[\\/:*?"<>|]/g, '-')); },
   print() {
     const r = report();
     $('#print').innerHTML = `<h2>${esc(r.title)}</h2><table dir="rtl">${r.rows.map((x, i) => `<tr>${x.map(c => i ? `<td>${esc(c)}</td>` : `<th>${esc(c)}</th>`).join('')}</tr>`).join('')}</table>`;
@@ -285,9 +285,9 @@ const A = {
     if (!c || db.emps.some(e => e.code === c)) { S.err = 'הקוד ריק או כבר בשימוש אצל עובד.'; return render(); }
     db.admin = c; save(); S.err = 'הקוד עודכן.'; render();
   },
-  async backup() { await api.backup(db); },
+  async backup() { await store.backup(db); },
   async restore() {
-    const d = await api.restore();
+    const d = await store.restore();
     if (!d || !d.emps || !d.shifts || !d.biz) { S.err = 'הקובץ אינו קובץ גיבוי תקין.'; return render(); }
     if (!confirm('הנתונים הקיימים יוחלפו. להמשיך?')) return;
     db = d; await save(); S.err = 'הנתונים נטענו.'; render();
@@ -320,7 +320,7 @@ document.addEventListener('change', ev => {
 
 setInterval(tick, 1000);
 (async () => {
-  db = (await api.load()) || newDb();
+  db = (await store.load()) || newDb();
   Rp.ym = ymOf(pStart(new Date()));
   render();
 })();
